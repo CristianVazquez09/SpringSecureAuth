@@ -3,7 +3,7 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-
+!application-dev.properties
 ### STS ###
 .apt_generated
 .classpath
@@ -32,6 +32,4 @@ build/
 ### VS Code ###
 .vscode/
 
-# Excepción: incluir application-dev.properties
-!application-dev.properties
 
