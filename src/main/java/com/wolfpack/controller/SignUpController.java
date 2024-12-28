@@ -1,31 +1,72 @@
 package com.wolfpack.controller;
 
-import com.wolfpack.util.SignupRequest;
-import com.wolfpack.service.impl.SignUpServiceImpl;
-import jakarta.validation.Valid;
+import com.wolfpack.model.ConfirmationMail;
+import com.wolfpack.service.IConfirmationMailService;
+import com.wolfpack.service.ISIgnUpService;
+import com.wolfpack.util.EmailUtil;
+import com.wolfpack.util.Mail;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/signup")
 public class SignUpController {
 
-    private final SignUpServiceImpl service;
+    private final ISIgnUpService service;
+    private final IConfirmationMailService confirmationMailService;
+    private final EmailUtil emailUtil;
 
-    @PostMapping("/signup")
-    public ResponseEntity<Integer> signup (@Valid @RequestBody SignupRequest signup) throws RuntimeException{
+    @PostMapping(value = "/sendMail/signup")
+    public ResponseEntity<Integer> sendMailSignUp(@RequestBody String username) throws Exception{
+        int rpa=0;
 
-        int rpa = 0;
+        if(username !=null && !username.isEmpty()){
 
-        boolean obj = service.saveSigUp(signup.getUsername(), signup.getPassword());
+            ConfirmationMail confirmationEmail = new ConfirmationMail();
+            confirmationEmail.setRandom(UUID.randomUUID().toString());
+            confirmationEmail.setUsername(username);
+            confirmationEmail.setExpiration(10);
+            confirmationMailService.save(confirmationEmail);
 
-        if(obj){
-            rpa =1;
+            Mail mail = new Mail();
+            mail.setFrom("C-WOLF.software@gmail.com");
+            mail.setTo(username);
+            mail.setSubject("Confirmar correo electrónico");
+
+            Map<String, Object> model = new HashMap<>();
+            String url = "http://localhost:8081/sigup/check/" + confirmationEmail.getRandom();
+            model.put("user", confirmationEmail.getUsername());
+            model.put("resetUrl", url);
+            mail.setModel(model);
+
+            emailUtil.sendMailConfirmation(mail);
+
+            rpa=1;
+
         }
 
-        return ResponseEntity.ok(rpa);
+        return new ResponseEntity<>(rpa, HttpStatus.OK);
+    }
+
+
+    @GetMapping(value = "/check/{random}")
+    public ResponseEntity<Object> checkReset(@PathVariable("random") String random, @RequestBody String password) throws Exception{
+        ConfirmationMail rm = confirmationMailService.findByRandom(random);
+
+        if(rm !=null && rm.getId() > 0){
+            if (!rm.isExpired()){
+               service.saveSigUp(rm.getUsername(), password);
+                confirmationMailService.delete(rm);
+            }
+        }
+
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }

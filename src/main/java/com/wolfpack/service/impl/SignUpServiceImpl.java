@@ -6,7 +6,6 @@ import com.wolfpack.service.ISIgnUpService;
 import com.wolfpack.model.User;
 import com.wolfpack.repo.IUserRepo;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,11 +19,9 @@ public class SignUpServiceImpl implements ISIgnUpService {
     private final PasswordEncoder bcrypt;
     private final IUserRepo userRepo;
 
-
-
     @Transactional
     @Override
-    public boolean saveSigUp(String username,String password) throws UserAlreadyExistsException{
+    public void saveSigUp(String username, String password) throws UserAlreadyExistsException{
 
          User findUser =userRepo.findOneByUsername(username);
 
@@ -36,8 +33,6 @@ public class SignUpServiceImpl implements ISIgnUpService {
        signUpRepo.insertUser(username, bcrypt.encode(password));
        signUpRepo.associateRoleWithUser(username);
 
-
-       return true;
     }
 
 }
