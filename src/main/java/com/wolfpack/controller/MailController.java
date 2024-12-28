@@ -49,7 +49,7 @@ public class MailController {
             model.put("resetUrl", url);
             mail.setModel(model);
 
-            emailUtil.sendMail(mail);
+            emailUtil.sendMailReset(mail);
 
             rpa=1;
 
